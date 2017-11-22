@@ -1,0 +1,162 @@
+<html>
+  <head>
+    <style>
+      .grid {
+        display: inline-flex;
+        flex-direction: column;
+        background: #666;
+      }
+
+      .row {
+        display: flex;
+        height: 8px;
+      }
+
+      .item {
+        width: 8px;
+      }
+
+      .item.populated {
+        background: #FBBD03;
+      }
+    </style>
+  </head>
+  <body>
+    <div id='root'>
+      <div class='grid'>
+        <div v-for='(row, i) in grid'
+          class='row'
+          @mousedown='mousedown'
+          @mouseup='mouseup'>
+          <div v-for='(item, j) in row'
+            class='item'
+            :class='{ populated: item }'
+            @mouseover='hover(i, j)'>
+          </div>
+        </div>
+      </div>
+      <br />
+    </div>
+    <script src='https://unpkg.com/vue@2.5.8/dist/vue.min.js'></script>
+    <script>
+      function survivable(grid, i, j, height, width) {
+        let neighbors = 0
+
+        for (let ti = i - 1; ti <= i + 1; ti++) {
+          for (let tj = j - 1; tj <= j + 1; tj++) {
+            if (
+              !(ti === i && tj === j) &&
+              ti >= 0 && tj >= 0 &&
+              ti < height && tj < width &&
+              grid[ti][tj]
+            ) {
+              neighbors++
+            }
+          }
+        }
+
+        return neighbors === 3 || (neighbors === 2 && grid[i][j])
+      }
+
+      function iterate(grid, next_grid) {
+        const height = grid.length
+        const width = grid[0].length
+
+        for (let i = 0; i < height; i++) {
+          for (let j = 0; j < width; j++) {
+            next_grid[i][j] = survivable(grid, i, j, height, width)
+          }
+        }
+      }
+
+      function generate_grid(height, width) {
+        const grid = Array(height)
+        for (let i = 0; i < grid.length; i++) {
+          grid[i] = Array(width)
+        }
+        return grid
+      }
+
+      function clear_grid(grid) {
+        const height = grid.length
+        const width = grid[0].length
+
+        for (let i = 0; i < height; i++) {
+          for (let j = 0; j < width; j++) {
+            grid[i][j] = false
+          }
+        }
+      }
+
+      const vm = new Vue({
+        el: '#root',
+        data() {
+
+          return {
+            grid: generate_grid(100, 100),
+            back_grid: generate_grid(100, 100),
+            hovered: null,
+            mouse: false,
+            playing: false
+          }
+        },
+        created() {
+          addEventListener('keydown', this.key);
+        },
+        methods: {
+          toggle(i, j) {
+            this.$set(this.grid[i], j, !this.grid[i][j])
+          },
+          step() {
+            iterate(this.grid, this.back_grid)
+            const next_grid = this.back_grid
+            this.back_grid = this.grid
+            this.grid = next_grid
+
+            if (this.playing) requestAnimationFrame(this.step)
+          },
+          clear() {
+            clear_grid(this.back_grid)
+            const next_grid = this.back_grid
+            this.back_grid = this.grid
+            this.grid = next_grid
+          },
+          key(ev) {
+            if (ev.which === 80) {
+              // p
+              this.playing = !this.playing
+            } else if (ev.which === 8) {
+              // backspace
+              this.clear()
+            }
+          },
+          hover(i, j) {
+            this.hovered = [i, j]
+          },
+          mousedown() {
+            this.mouse = true
+          },
+          mouseup() {
+            this.mouse = false
+          },
+          toggle_hovered() {
+            const [i, j] = this.hovered
+            this.toggle(i, j)
+          }
+        },
+        watch: {
+          mouse(new_mouse) {
+            if (new_mouse && this.hovered !== null) this.toggle_hovered()
+          },
+          hovered(new_hovered) {
+            if (this.mouse && new_hovered !== null) this.toggle_hovered()
+          },
+          playing(new_playing) {
+            if (new_playing) this.step()
+          }
+        }
+      })
+    </script>
+  </body>
+</html>
+
