@@ -30,14 +30,17 @@
   <body>
     <div id='root'>
       <template>
+        Template: 
         <select ref='select_templates' v-model='selected_template'>
           <option disabled value=''>custom</option>
           <option v-for='(t, k) in templates' :value='k'>{{ k }}</option>
         </select>
-        <button @click='toggle_play'>Play/Pause</button>
-        <button @click='step'>Step</button>
+        <br />
         Width: <input type='range' min='1' max='200' v-model.number='dimensions.width' />
         Height: <input type='range' min='1' max='200' v-model.number='dimensions.height' />
+        <br />
+        <button @click='toggle_play'>Play/Pause</button>
+        <button @click='step'>Step</button>
         <br />
         Generation {{ generation }}
         <br />
@@ -290,6 +293,7 @@
         created() {
           addEventListener('keydown', this.key);
           this.allocate_grid()
+          this.selected_template = 'glass_castle'
         },
         methods: {
           toggle(i, j) {
