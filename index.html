@@ -5,15 +5,21 @@
         display: inline-flex;
         flex-direction: column;
         background: #666;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
       }
 
       .row {
         display: flex;
-        height: 8px;
+        height: 4px;
       }
 
       .item {
-        width: 8px;
+        width: 4px;
       }
 
       .item.populated {
@@ -23,22 +29,156 @@
   </head>
   <body>
     <div id='root'>
-      <div class='grid'>
-        <div v-for='(row, i) in grid'
-          class='row'
-          @mousedown='mousedown'
-          @mouseup='mouseup'>
-          <div v-for='(item, j) in row'
-            class='item'
-            :class='{ populated: item }'
-            @mouseover='hover(i, j)'>
+      <template>
+        <select ref='select_templates' v-model='selected_template'>
+          <option disabled value=''>custom</option>
+          <option v-for='(t, k) in templates' :value='k'>{{ k }}</option>
+        </select>
+        <button @click='toggle_play'>Play/Pause</button>
+        <button @click='step'>Step</button>
+        Width: <input type='range' min='1' max='200' v-model.number='dimensions.width' />
+        Height: <input type='range' min='1' max='200' v-model.number='dimensions.height' />
+        <br />
+        Generation {{ generation }}
+        <br />
+        <div class='grid'>
+          <div v-for='(row, i) in grid'
+            class='row'
+            @mousedown='mousedown'
+            @mouseup='mouseup'>
+            <div v-for='(item, j) in row'
+              class='item'
+              :class='{ populated: item }'
+              @mouseover='hover(i, j)'>
+            </div>
           </div>
         </div>
-      </div>
-      <br />
+      </template>
     </div>
     <script src='https://unpkg.com/vue@2.5.8/dist/vue.min.js'></script>
     <script>
+      const templates = {
+        empty: [[]],
+        glider: [
+          [false, false, true],
+          [true, false, true],
+          [false, true, true]
+        ],
+        r_pentomino: [
+          [false, true, true],
+          [true, true, false],
+          [false, true, false]
+        ],
+        die_hard: [
+          [false, false, false, false, false, false, true, false],
+          [true, true, false, false, false, false, false, false],
+          [false, true, false, false, false, true, true, true]
+        ],
+        acorn: [
+          [false, true, false, false, false, false, false],
+          [false, false, false, true, false, false, false],
+          [true, true, false, false, true, true, true]
+        ],
+        glass_castle: [
+          [false, false, true, true, false, false, false],
+          [false, true, false, false, true, false, false],
+          [false, false, true, true, false, false, false],
+          [false, false, false, false, false, false, false],
+          [false, false, false, false, false, false, true],
+          [false, false, false, false, false, false, true],
+          [false, false, false, false, false, false, true],
+          [false, true, true, true, true, true, false],
+          [true, false, false, false, false, false, false],
+          [true, false, false, false, false, false, false],
+          [true, false, false, false, false, false, false],
+          [false, false, false, false, false, false, false],
+          [false, false, false, true, true, false, false],
+          [false, false, true, false, false, true, false],
+          [false, false, false, true, true, false, false],
+        ],
+        octagon_bloom: [
+          [false, false, true, true, false, false, false],
+          [false, true, true, true, true, false, false],
+          [false, false, true, true, false, false, false],
+          [false, false, false, false, false, false, false],
+          [false, false, false, false, false, false, true],
+          [false, false, false, false, false, false, true],
+          [false, false, false, false, false, false, true],
+          [false, true, true, true, true, true, false],
+          [true, false, false, false, false, false, false],
+          [true, false, false, false, false, false, false],
+          [true, false, false, false, false, false, false],
+          [false, false, false, false, false, false, false],
+          [false, false, false, true, true, false, false],
+          [false, false, true, true, true, true, false],
+          [false, false, false, true, true, false, false],
+        ],
+        s_coffin: [
+          [false, true, true, true, true, true, true, true, false],
+          [false, false, false, false, false, true, true, false, false],
+          [true, false, false, false, false, false, false, false, true],
+          [false, false, true, true, false, false, false, false, false],
+          [false, true, true, true, true, true, true, true, false]
+        ],
+        s_coffin_2: [
+          [false, true, true, true, true, true, true, false],
+          [false, false, false, false, true, true, false, false],
+          [true, false, false, false, false, false, false, true],
+          [false, false, true, true, false, false, false, false],
+          [false, true, true, true, true, true, true, false]
+        ],
+        s_coffin_3: [
+          [false, true, true, true, true, true, true, false],
+          [false, false, false, false, true, true, false, false],
+          [true, true, false, false, false, false, true, true],
+          [false, false, true, true, false, false, false, false],
+          [false, true, true, true, true, true, true, false]
+        ],
+        s_coffin_4: [
+          [false, false, true, true, true, true, false, false],
+          [false, false, false, false, true, true, false, false],
+          [true, false, false, false, false, false, false, true],
+          [false, false, true, true, false, false, false, false],
+          [false, false, true, true, true, true, false, false]
+        ],
+        s_coffin_5: [
+          [false, true, true, true, true, false],
+          [false, false, false, true, true, false],
+          [true, false, false, false, false, true],
+          [false, true, true, false, false, false],
+          [false, true, true, true, true, false]
+        ],
+        four_dot: [
+          [true, true, false, true],
+          [false, true, false, true],
+          [false, false, false, true],
+        ],
+        flash: [
+          [true, true, true, false, true, true, true],
+          [true, false, true, false, true, false, true],
+          [true, true, true, false, true, true, true]
+        ],
+        pulsar: [
+          [true, true, true, false, false, false, true, true, true],
+          [true, false, true, false, false, false, true, false, true],
+          [true, true, true, false, false, false, true, true, true]
+        ],
+        frog: [
+          [false, false, false, true, false, false, false],
+          [false, false, true, true, true, false, false],
+          [false, true, true, true, true, true, false],
+          [true, true, false, false, false, true, true]
+        ],
+        block_layer: [
+          [false, false, false, false, false, false, true, false],
+          [false, false, false, false, true, false, true, true],
+          [false, false, false, false, true, false, true, false],
+          [false, false, false, false, true, false, false, false],
+          [false, false, true, false, false, false, false, false],
+          [true, false, true, false, false, false, false, false]
+        ]
+      }
+
       function survivable(grid, i, j, height, width) {
         let neighbors = 0
 
@@ -88,46 +228,107 @@
         }
       }
 
+      function greater(a, b) {
+        return a > b ? a : b
+      }
+
+      function lesser(a, b) {
+        return a < b ? a : b
+      }
+
+      function apply_template(grid, template, y0, x0) {
+        const height = grid.length
+        const width = grid[0].length
+
+        const t_height = template.length
+        const t_width = template[0].length
+
+        for (
+          let y = y0, i = y0 < 0 ? -y0 : 0;
+          y < lesser(height, y0 + t_height);
+          y++, i++
+        ) {
+          for (
+            let x = x0, j = x0 < 0 ? -x0 : 0;
+            x < lesser(width, x0 + t_width);
+            x++, j++
+          ) {
+            grid[y][x] = template[i][j]
+          }
+        }
+      }
+
+      function apply_template_center(grid, template) {
+        const height = grid.length
+        const width = grid[0].length
+
+        const t_height = template.length
+        const t_width = template[0].length
+
+        const y0 = (height - t_height) / 2 | 0
+        const x0 = (width - t_width) / 2 | 0
+
+        apply_template(grid, template, y0, x0)
+      }
+
       const vm = new Vue({
         el: '#root',
-        data() {
-
-          return {
-            grid: generate_grid(100, 100),
-            back_grid: generate_grid(100, 100),
-            hovered: null,
-            mouse: false,
-            playing: false
-          }
+        data: {
+          templates,
+          selected_template: '',
+          generation: 0,
+          grid: [],
+          back_grid: [],
+          dimensions: {
+            width: 100,
+            height: 100,
+          },
+          hovered: null,
+          mouse: false,
+          playing: false
         },
         created() {
           addEventListener('keydown', this.key);
+          this.allocate_grid()
         },
         methods: {
           toggle(i, j) {
+            if (this.selected_template !== '') this.selected_template = ''
             this.$set(this.grid[i], j, !this.grid[i][j])
           },
           step() {
+            if (this.selected_template !== '') this.selected_template = ''
             iterate(this.grid, this.back_grid)
-            const next_grid = this.back_grid
-            this.back_grid = this.grid
-            this.grid = next_grid
+            this.swap_buffers()
+            this.generation++
 
             if (this.playing) requestAnimationFrame(this.step)
           },
-          clear() {
-            clear_grid(this.back_grid)
+          swap_buffers() {
             const next_grid = this.back_grid
             this.back_grid = this.grid
             this.grid = next_grid
+          },
+          template(name) {
+            const t = this.templates[name]
+            clear_grid(this.back_grid)
+            apply_template_center(this.back_grid, t)
+            this.swap_buffers()
+            this.generation = 0
+          },
+          toggle_play() {
+            this.playing = !this.playing
           },
           key(ev) {
             if (ev.which === 80) {
               // p
-              this.playing = !this.playing
+              this.toggle_play()
             } else if (ev.which === 8) {
               // backspace
-              this.clear()
+              this.selected_template = 'empty'
+            } else if (ev.which === 83) {
+              // s
+              this.step()
             }
           },
           hover(i, j) {
@@ -142,6 +343,12 @@
           toggle_hovered() {
             const [i, j] = this.hovered
             this.toggle(i, j)
+          },
+          allocate_grid() {
+            this.playing = false
+            this.generation = 0
+            this.grid = generate_grid(this.dimensions.height, this.dimensions.width)
+            this.back_grid = generate_grid(this.dimensions.height, this.dimensions.width)
           }
         },
         watch: {
@@ -153,6 +360,18 @@
           },
           playing(new_playing) {
             if (new_playing) this.step()
+          },
+          selected_template() {
+            if (this.selected_template !== '') {
+              this.template(this.selected_template)
+            }
+            this.$refs.select_templates.blur()
+          },
+          dimensions: {
+            handler() {
+              this.allocate_grid()
+            },
+            deep: true
           }
         }
       })
