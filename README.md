@@ -1,3 +1,3 @@
-# vue-conway
+# conway
 
 Open `index.html`.
